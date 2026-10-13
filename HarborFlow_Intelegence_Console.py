@@ -1,35 +1,49 @@
 import json
-from pathlib import Path
+import os
 
 
-
-def json_reader(file_path):
-    print(file_path)
+def load_json(directory):
+    print(directory)
     damaged_files = 0
     list_of_dicts = []
-    for file in file_path.glob("*.json"): 
-        with open(file, "r") as f:
-            try:
-                data = json.load(f)  
-                list_of_dicts.append(data)
-            except json.JSONDecodeError as e:
-                damaged_files += 1
-                print(f"Error decoding JSON from file {file}: {e}")
-                print(f"Total damaged files: {damaged_files}")
+
+    for file_name in os.listdir(directory): 
+        if file_name.endswith(".json"):
+            file_path = os.path.join(directory, file_name)
+            with open(file_path, "r") as f:
+                try:
+                    data = json.load(f)  
+                    list_of_dicts.append(data)
+                except json.JSONDecodeError as e:
+                    damaged_files += 1 
+                    print(f"Total damaged files: {damaged_files}")
     return list_of_dicts
 
-def print_vessel_data():
-    script_dir = Path(__file__).parent
-    path_vessels = Path(f"{script_dir}/dataset/vessels")
-    data = json_reader(path_vessels)
+def get_vessel_name(vessel):
+    return vessel['name']
+
+def sort_vessels_by_name(vessels):
+    sorted_vessels = sorted(vessels, key=get_vessel_name)
+    return sorted_vessels
+
+
+def load_vessels():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    path_vessels = os.path.join(f"{script_dir}/dataset/vessels")
+
+
+    data = load_json(path_vessels)  
+    data = sort_vessels_by_name(data)
+
     i = 0
-    for d in data: 
+    for d in data:
         print(f"- {d['name']} | IMO {d['imo']} | {d['capacity_teu']} TEU")
         i += 1
 
 
 def main():
-    print_vessel_data()
+
+    load_vessels()
     
 
 if __name__ == "__main__":
