@@ -30,10 +30,8 @@ def load_csv(directory, vessel_id):
         rows = list(reader) 
     
     for call in rows: 
-        print(call[1])
         if vessel_id == call[1]:
             list_of_calls.append(call)
-    print(list_of_calls,"list of calls with matchin ids")
 
     return list_of_calls
 
@@ -50,16 +48,14 @@ def load_vessels():
     
     vessels = load_json(path_vessels)
     vessels = sort_vessels_alphabetically(vessels)
-    print(vessels,"VESSELS")
     return vessels #returns a list of dictionaries of vessels
 
 def display_registered(vessels): 
-    print(vessels)
     for v in vessels:
         print(f"- {v['name']} | IMO {v['imo']} | {v['capacity_teu']} TEU") 
 
 
- 
+# finds id in the port call in accordance with the vessels name, then sorts the calls by date and alphabetically if needed. 
 def find_id_in_port_calls(vessels_name, reference_date): 
     #vessels_name = input("Vessel name: ").strip()
     #reference_date = input("Type in a reference date in the following format YYYY-MM-DD: ").strip()
@@ -77,7 +73,7 @@ def find_id_in_port_calls(vessels_name, reference_date):
         if vessels_name.lower() == v['name'].lower():
             id = v['vessel_id'] 
     port_calls = load_csv(filename, id) #list of calls of a vessel with a given ID    
-    if id is "":
+    if id == "":
         print("Vessel not found.")
     calls_to_sort = [] #list of ids to sort alphabetically if they have the same date 
     try:
@@ -103,13 +99,13 @@ def get_port_call_date(call):
 
 def sort_port_calls(calls): 
     sorted_calls = sorted(calls, key=get_port_call_date) #sorts the calls by date first and then alphabeticaly by id
-    print(sorted_calls, "SORTED CALLS")
 
     return sorted_calls[0]
 
+#retrieves the manifests from the dataset and sorts them according with the vessels id.
 def get_matching_manifests(port_call_id):
-    calls_id = port_call_id[0]
-    manifest_directory = f"{script_dir}/dataset/manifest"
+    calls_id = port_call_id
+    manifest_directory = f"{script_dir}/dataset/manifests"
     list_manifests = load_json(manifest_directory) 
 
     found_manifest = None
@@ -119,38 +115,76 @@ def get_matching_manifests(port_call_id):
     if found_manifest == None:
         print("Manifest unavailable")
         return
-    print(found_manifest)
     return found_manifest
 
+#retrieves the shipments which ids match with the ids in the manifest 
 def get_matching_shipments(dict_manifest):
-    shipment_ids = dict_manifest["shipment_ids"]
-    shipment_directory = f"{script_dir}/dataset/manifest"
-    list_shipments = load_json(shipment_directory)
+    shipment_ids_in_found_manifest = dict_manifest["shipment_ids"]
+    shipment_directory = f"{script_dir}/dataset/shipments"
+    list_of_dicts_shipments = load_json(shipment_directory)
 
-    list_sorted_shipments = []
-    for shipment in list_shipments:
-        shipment_id_to_compare = shipment[0]
-        for id in shipment_ids:
-            if shipment_id_to_compare == id:
-                list_sorted_shipments.append(shipment)
 
-    return list_sorted_shipments
+    found_shipment = []
+    missing_shipments = []
+    num_missing_shipments = 0
+    declared_shipments = 0
+    resolved_weight = 0
 
+    i = 1
+    for id in shipment_ids_in_found_manifest:
+        found_shipment = None
+        for shipment in list_of_dicts_shipments:
+            if id == shipment["shipment_id"]:
+                found_shipment = shipment
+
+                try: # check if all the necessary keys exist in the found shipment
+                    shipment_id = found_shipment['shipment_id']
+                    customer = found_shipment['customer']
+                    weight_kg = found_shipment['weight_id']
+                    cargo_type = found_shipment['cargo_type']
+                except KeyError:
+                    found_shipment = None # keep found_shipment at None if keys do not match
+                    break
+
+                declared_shipments += 1    
+                break
+            
+        if found_shipment is None:
+            missing_shipments.append(id)
+            num_missing_shipments += 1
+            declared_shipments += 1
+            break
+
+        print(f"{i}. {found_shipment['shipment_id']} | {found_shipment['customer']} | {found_shipment['weight_kg']:.1f} kg | {found_shipment['cargo_type']}")
+ 
+        resolved_weight += found_shipment['weight_kg']
+        i += 1
+
+    j = 0
+    for mis_ship in missing_shipments:
+        print(f"{i}. {missing_shipments[j]} | MISSING RECORD")
+        j += 1 
+        
+    print(f"Declared shipments: {declared_shipments}")
+    print(f"Resolved weight: {resolved_weight:.2f} kg")
+    print(f"Missing shipment record: {num_missing_shipments}")
+
+    return list_sorted_shipments, num_missing_shipments, missing_shipments
+
+#finally, bring all the data together and manifest it. 
 def inspect_vessel_manifest(name, date):
     calls_id = find_id_in_port_calls(name, date)
     matching_manifest = get_matching_manifests(calls_id)
-    list_matching_shipments = get_matching_shipments(matching_manifest)
-    formated_date = datetime.strptime(date, "%d %B %Y")
+    
+    date = datetime.strptime(date, "%Y-%m-%d").date() #parsing the string into datetime first
+    formated_date = datetime.strftime(date, "%d %B %Y") # formating it
+    print(f"Manifest for {name} | Call {calls_id} | {formated_date}")
 
-    
-    
-    print(f"Manifest for {name} | Call {calls_id} | {date}")
-    for shipmet in list_matching_shipments:
-        print()
-    
+    get_matching_shipments(matching_manifest)
+
 
 def main(): 
-    find_id_in_port_calls("Nordic Relay", "2026-10-18")
+    inspect_vessel_manifest("Baltic Pioneer", "2026-10-18")
 
     #display_registered(load_vessels())
 
