@@ -104,6 +104,9 @@ def sort_port_calls(calls):
 
 #retrieves the manifests from the dataset and sorts them according with the vessels id.
 def get_matching_manifests(port_call_id):
+    if port_call_id == None:
+            return
+    
     calls_id = port_call_id
     manifest_directory = f"{script_dir}/dataset/manifests"
     list_manifests = load_json(manifest_directory) 
@@ -119,7 +122,8 @@ def get_matching_manifests(port_call_id):
 
 #retrieves the shipments which ids match with the ids in the manifest 
 def get_matching_shipments(dict_manifest):
-    
+    if dict_manifest == None:
+        return
     shipment_ids_in_manifest = dict_manifest["shipment_ids"]
     shipment_directory = f"{script_dir}/dataset/shipments"
     list_of_dicts_shipments = load_json(shipment_directory)
@@ -152,41 +156,19 @@ def get_matching_shipments(dict_manifest):
             missing_shipments.append(id)
         num_missing_shipments = len(missing_shipments) 
 
-
     return found_shipments, num_declared_shipments, num_missing_shipments, missing_shipments
 
 #finally, bring all the data together and manifest it. 
 def inspect_vessel_manifest(name, date):
     call_id = find_id_in_port_calls(name, date)
 
-    if call_id == None:
-        return
-    
     matching_manifest = get_matching_manifests(call_id)
     date = datetime.strptime(date, "%Y-%m-%d").date() #parsing the string into datetime first
     formated_date = datetime.strftime(date, "%d %B %Y") # formating it
 
-    if matching_manifest == None :
-        return
-    
     resolved_weight = 0
     found_shipments, num_declared_shipments, num_missing_shipments, missing_shipments = get_matching_shipments(matching_manifest)
-
-    #found_index = 0
-    #number = 1
-    #for id in matching_manifest['shipment_ids']:
-    #    for missing_id in missing_shipments:
-    #        if missing_id == id:
-    #            print(f"{number}. {id} | MISSING RECORD")
-    #        else:
-    #            break
-    #    if found_index <= len(found_shipments)-1:
-    #        shipment = found_shipments[found_index]
-    #        found_index += 1                                                                                      
-    #        resolved_weight += shipment['weight_kg']                                                              
-    #        print(f"{number}. {shipment['shipment_id']} | {shipment['customer']} | {shipment['weight_kg']:.1f} kg | {shipment['cargo_type']}")
-    #    number += 1
-
+ 
     resolved_weight = 0
     found_index = 0
     number = 1
@@ -199,52 +181,45 @@ def inspect_vessel_manifest(name, date):
             found_index += 1
             resolved_weight += shipment['weight_kg']
             print(f"{number}. {shipment_id} | {shipment['customer']} | {shipment['weight_kg']:.1f} kg | {shipment['cargo_type']}")
-        number += 1
-
-            
-    #found_index = 0
-    #number = 1
-    #for shipment_id in matching_manifest['shipment_ids']:
-    #   print(shipment_id, 'and', missing_shipments, "IF COMPARING THESE TWO")
-    #   if shipment_id == missing_id:
-    #       print(f"{number}. {shipment_id} | MISSING RECORD")
-    #   elif found_index <= len(found_shipments)-1:
-    #       print(found_index, "INDEX")
-    #       shipment = found_shipments[found_index]
-    #       found_index += 1
-    #       resolved_weight += shipment['weight_kg']
-    #       print(f"{number}. {shipment['customer']} | {shipment['weight_kg']:.1f} kg | {shipment['cargo_type']}")
-    #   number += 1
-
-    #i = 1
-    #if found_shipment == None:
-    #    for mis_ship in missing_shipments:
-    #                print(f"{i}. {mis_ship} | MISSING RECORD")
-    #                i += 1
-    #                resolved_weight = 0
-    #else:
-    #    for shipment in found_shipment:    
-    #                print(f"{i}. {shipment['shipment_id']} | {shipment['customer']} | {shipment['weight_kg']:.1f} kg | {shipment['cargo_type']}")
-    #                resolved_weight += shipment['weight_kg']
-    #                i += 1     
-
-        
+        number += 1 
     print(f"Declared shipments: {num_declared_shipments}")
     print(f"Resolved weight: {resolved_weight:.2f} kg")
     print(f"Missing shipment records: {num_missing_shipments}")
 
-
 def identify_priority_cargo(call_id):
-    call_id = call_id.strip().upper()
+    call_id = call_id.strip().upper() #upper makes sure that users input is always in upper case. Therefore it always compares the upper to upper (call id in the csb is upper).
     matching_manifests = get_matching_manifests(call_id)
-    matching_shipment = get_matching_shipments(matching_manifests)
+    found_shipments, num_declared_shipments, num_missing_shipments, missing_shipments = get_matching_shipments(matching_manifests) 
 
+    list_controlled = []
+    list_cold_chain = []
+    list_expedite = []
+    list_standart = []
 
+    for shipment in found_shipments:
+        if shipment['hazardous'] == True:
+            print(f"{shipment['shipment_id']} | CONTROLLED | hazardous cargo")
+            list_controlled.append(shipment['shipment_id'])
+        elif shipment['temperature_controlled'] == True:
+            print(f"{shipment['shipment_id']} | COLD CHAIN | temperature is controlled")
+            list_cold_chain.append(shipment['shipment_id'])
+        elif shipment['priority'] == "EXPRESS":
+            print(f"{shipment['shipment_id']} | EXPEDITE | express service")
+            list_expedite.append(shipment['shipment_id'])
+        elif shipment['weight_kg'] >= 5000:
+            print(f"{shipment['shipment_id']} | EXPEDITE | weight is or above 5000kg")
+            list_expedite.append(shipment['shipment_id'])
+        else:
+            print(f"{shipment['shipment_id']} | STANDART | ")
+            list_standart.append(shipment['shipment_id'])
+
+    print(f"Category totals: CONTROLLED={len(list_controlled)}, COLD CHAIN={len(list_cold_chain)}, EXPEDITE={len(list_expedite)}, STANDART={len(list_standart)}")
     return
 
 def main(): 
-    inspect_vessel_manifest("Baltic Pioneer", "2026-10-01")
+    #inspect_vessel_manifest("Baltic Pioneer", "2026-10-01")
     #display_registered_vessels(load_vessels())
+    identify_priority_cargo("HFL-aar-2071")
 
 
     return
