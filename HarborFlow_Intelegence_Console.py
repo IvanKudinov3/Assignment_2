@@ -50,7 +50,7 @@ def load_vessels():
     vessels = sort_vessels_alphabetically(vessels)
     return vessels #returns a list of dictionaries of vessels
 
-def display_registered(vessels): 
+def display_registered_vessels(vessels): 
     for v in vessels:
         print(f"- {v['name']} | IMO {v['imo']} | {v['capacity_teu']} TEU") 
 
@@ -114,79 +114,139 @@ def get_matching_manifests(port_call_id):
             found_manifest = manifest
     if found_manifest == None:
         print("Manifest unavailable")
-        return
+        return 
     return found_manifest
 
 #retrieves the shipments which ids match with the ids in the manifest 
 def get_matching_shipments(dict_manifest):
-    shipment_ids_in_found_manifest = dict_manifest["shipment_ids"]
+    
+    shipment_ids_in_manifest = dict_manifest["shipment_ids"]
     shipment_directory = f"{script_dir}/dataset/shipments"
     list_of_dicts_shipments = load_json(shipment_directory)
 
-
-    found_shipment = []
+    found_shipments = []
     missing_shipments = []
     num_missing_shipments = 0
-    declared_shipments = 0
-    resolved_weight = 0
-
-    i = 1
-    for id in shipment_ids_in_found_manifest:
-        found_shipment = None
+    num_declared_shipments = len(shipment_ids_in_manifest) 
+    
+    for id in shipment_ids_in_manifest: 
+        found = False #the id was not found 
         for shipment in list_of_dicts_shipments:
-            if id == shipment["shipment_id"]:
-                found_shipment = shipment
-
-                try: # check if all the necessary keys exist in the found shipment
-                    shipment_id = found_shipment['shipment_id']
-                    customer = found_shipment['customer']
-                    weight_kg = found_shipment['weight_id']
-                    cargo_type = found_shipment['cargo_type']
-                except KeyError:
-                    found_shipment = None # keep found_shipment at None if keys do not match
-                    break
-
-                declared_shipments += 1    
+            if id == shipment["shipment_id"]: 
+                #check if every key is in the shipment dict. If it is not, add it and give it a string "NOT PROVIDED" or False where appropriate
+                if 'hazardous' not in shipment:
+                    shipment['hazardous'] = False
+                if 'temperature_controlled' not in shipment:
+                    shipment['temperature_controlled'] = False
+                if 'cargo_type' not in shipment:
+                    shipment['cargo_type'] = "NOT PROVIDED"
+                if 'customer' not in shipment:
+                    shipment['customer'] = "NOT PROVIDED"
+                if 'weight_kg' not in shipment:
+                    shipment['weight_kg'] = "NOT PROVIDED" 
+                found_shipments.append(shipment) 
+                found = True #id was found
                 break
-            
-        if found_shipment is None:
+
+        if not found: #if id was not matched
             missing_shipments.append(id)
-            num_missing_shipments += 1
-            declared_shipments += 1
-            break
+        num_missing_shipments = len(missing_shipments) 
 
-        print(f"{i}. {found_shipment['shipment_id']} | {found_shipment['customer']} | {found_shipment['weight_kg']:.1f} kg | {found_shipment['cargo_type']}")
- 
-        resolved_weight += found_shipment['weight_kg']
-        i += 1
 
-    j = 0
-    for mis_ship in missing_shipments:
-        print(f"{i}. {missing_shipments[j]} | MISSING RECORD")
-        j += 1 
-        
-    print(f"Declared shipments: {declared_shipments}")
-    print(f"Resolved weight: {resolved_weight:.2f} kg")
-    print(f"Missing shipment record: {num_missing_shipments}")
-
-    return list_sorted_shipments, num_missing_shipments, missing_shipments
+    return found_shipments, num_declared_shipments, num_missing_shipments, missing_shipments
 
 #finally, bring all the data together and manifest it. 
 def inspect_vessel_manifest(name, date):
-    calls_id = find_id_in_port_calls(name, date)
-    matching_manifest = get_matching_manifests(calls_id)
+    call_id = find_id_in_port_calls(name, date)
+
+    if call_id == None:
+        return
     
+    matching_manifest = get_matching_manifests(call_id)
     date = datetime.strptime(date, "%Y-%m-%d").date() #parsing the string into datetime first
     formated_date = datetime.strftime(date, "%d %B %Y") # formating it
-    print(f"Manifest for {name} | Call {calls_id} | {formated_date}")
 
-    get_matching_shipments(matching_manifest)
+    if matching_manifest == None :
+        return
+    
+    resolved_weight = 0
+    found_shipments, num_declared_shipments, num_missing_shipments, missing_shipments = get_matching_shipments(matching_manifest)
 
+    #found_index = 0
+    #number = 1
+    #for id in matching_manifest['shipment_ids']:
+    #    for missing_id in missing_shipments:
+    #        if missing_id == id:
+    #            print(f"{number}. {id} | MISSING RECORD")
+    #        else:
+    #            break
+    #    if found_index <= len(found_shipments)-1:
+    #        shipment = found_shipments[found_index]
+    #        found_index += 1                                                                                      
+    #        resolved_weight += shipment['weight_kg']                                                              
+    #        print(f"{number}. {shipment['shipment_id']} | {shipment['customer']} | {shipment['weight_kg']:.1f} kg | {shipment['cargo_type']}")
+    #    number += 1
+
+    resolved_weight = 0
+    found_index = 0
+    number = 1
+
+    for shipment_id in matching_manifest['shipment_ids']:
+        if shipment_id in missing_shipments:
+            print(f"{number}. {shipment_id} | MISSING RECORD")
+        else:
+            shipment = found_shipments[found_index]
+            found_index += 1
+            resolved_weight += shipment['weight_kg']
+            print(f"{number}. {shipment_id} | {shipment['customer']} | {shipment['weight_kg']:.1f} kg | {shipment['cargo_type']}")
+        number += 1
+
+            
+    #found_index = 0
+    #number = 1
+    #for shipment_id in matching_manifest['shipment_ids']:
+    #   print(shipment_id, 'and', missing_shipments, "IF COMPARING THESE TWO")
+    #   if shipment_id == missing_id:
+    #       print(f"{number}. {shipment_id} | MISSING RECORD")
+    #   elif found_index <= len(found_shipments)-1:
+    #       print(found_index, "INDEX")
+    #       shipment = found_shipments[found_index]
+    #       found_index += 1
+    #       resolved_weight += shipment['weight_kg']
+    #       print(f"{number}. {shipment['customer']} | {shipment['weight_kg']:.1f} kg | {shipment['cargo_type']}")
+    #   number += 1
+
+    #i = 1
+    #if found_shipment == None:
+    #    for mis_ship in missing_shipments:
+    #                print(f"{i}. {mis_ship} | MISSING RECORD")
+    #                i += 1
+    #                resolved_weight = 0
+    #else:
+    #    for shipment in found_shipment:    
+    #                print(f"{i}. {shipment['shipment_id']} | {shipment['customer']} | {shipment['weight_kg']:.1f} kg | {shipment['cargo_type']}")
+    #                resolved_weight += shipment['weight_kg']
+    #                i += 1     
+
+        
+    print(f"Declared shipments: {num_declared_shipments}")
+    print(f"Resolved weight: {resolved_weight:.2f} kg")
+    print(f"Missing shipment records: {num_missing_shipments}")
+
+
+def identify_priority_cargo(call_id):
+    call_id = call_id.strip().upper()
+    matching_manifests = get_matching_manifests(call_id)
+    matching_shipment = get_matching_shipments(matching_manifests)
+
+
+    return
 
 def main(): 
-    inspect_vessel_manifest("Baltic Pioneer", "2026-10-18")
+    inspect_vessel_manifest("Baltic Pioneer", "2026-10-01")
+    #display_registered_vessels(load_vessels())
 
-    #display_registered(load_vessels())
 
+    return
 if __name__ == "__main__":
     main()
