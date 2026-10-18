@@ -1,3 +1,5 @@
+import HarborFlow_Intelegence_Console
+import operations
 def menu():
     print("HARBORFLOW PORT INTELLIGENCE \n"
     "1. List registered vessels\n"
@@ -17,14 +19,16 @@ def menu():
 def main(): 
     while True:
         match menu(): 
-            case "1":
-                print("Listing registered vessels...")
+            case "1":  
+                operations.display_registered_vessels()
                 print()
             case "2":
                 print("Inspecting vessel manifest...")
+                operations.inspect_vessel_manifest(input("Type in the name of the vessel: "), input("Type in the date: "))
                 print()
             case "3":
                 print("Identifying priority cargo...")
+                operations.identify_priority_cargo(input("Type in the port call ID: "))
                 print()
             case "4":
                 print("Exporting customer operations profile...")
