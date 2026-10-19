@@ -6,6 +6,7 @@ where practical.
 import os 
 from datetime import datetime
 import data_access
+import text_tools
 
 script_dir = os.path.dirname(os.path.abspath(__file__)) #directory the main.py is in. The assumption is the dataset will be in the same directory.
 
