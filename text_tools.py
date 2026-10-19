@@ -35,3 +35,58 @@ def longest_unique_sequence(events):#gives the longest sequence without repetiot
             best_start = start
 
     return best_length, events[best_start:best_start + best_length]
+
+# Task 9: Make text easier to search.
+def normalize_words(text):
+    """Convert text to lowercase words and remove punctuation."""
+    text = text.lower()
+    text = re.sub(r"[^\w\s]", " ", text)
+    return text.split()
+
+
+# Build an index connecting each word to incident IDs.
+def build_incident_index(incidents):
+    word_to_ids = {}
+    titles = {}
+
+    for incident in sorted(incidents, key=lambda item: str(item["incident_id"])):
+        incident_id = str(incident["incident_id"])
+        titles[incident_id] = str(incident["title"])
+
+        # Sets stop the same word adding an ID more than once.
+        for word in set(normalize_words(incident["report"])):
+            word_to_ids.setdefault(word, set()).add(incident_id)
+
+    sorted_index = {
+        word: sorted(ids)
+        for word, ids in sorted(word_to_ids.items())
+    }
+
+    return {
+        "index": sorted_index,
+        "titles": dict(sorted(titles.items()))
+    }
+
+
+# Find incidents matching the user's search words.
+def search_incident_index(index_data, query):
+    index = index_data["index"]
+    titles = index_data["titles"]
+    scores = {}
+
+    # A repeated query word should only count once.
+    for word in set(normalize_words(query)):
+        for incident_id in index.get(word, []):
+            scores[incident_id] = scores.get(incident_id, 0) + 1
+
+    # Highest score first; incident ID breaks ties.
+    ranked_ids = sorted(
+        scores,
+        key=lambda incident_id: (-scores[incident_id], incident_id)
+    )
+
+    return [
+        (incident_id, scores[incident_id], titles[incident_id])
+        for incident_id in ranked_ids
+        if incident_id in titles
+    ]
