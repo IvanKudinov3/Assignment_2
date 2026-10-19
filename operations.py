@@ -240,7 +240,7 @@ def sanitize_incident_service():
         print(f"{number}. {incident['title']}")
 
     selected = None
-    while selected is None:  # цикл без break: виходимо, коли selected заповнений
+    while selected is None:
         raw = input("Select incident: ").strip()
         try:
             number = int(raw)
