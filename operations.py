@@ -329,3 +329,87 @@ def sequence_service():
     print("Event codes: " + ",".join(events))
     print(f"Longest stable sequence length: {length}")
     print("Sequence: " + " -> ".join(sequence))
+
+
+def summarize_customer(shipments, customer):
+    matches = []
+    for shipment in shipments:
+        try:
+            name = shipment['customer'].strip()
+            weight = Decimal(str(shipment['weight_kg']))
+            destination = shipment['destination'].strip()
+            priority = shipment['priority'].strip().upper()
+            if not name or not destination or not weight.is_finite() or weight < 0:
+                raise ValueError('invalid shipment fields')
+        except (KeyError, AttributeError, ValueError, InvalidOperation, TypeError):
+            print(f"Skipping invalid shipment: {shipment.get('shipment_id', 'unknown')}.")
+            continue
+        if name.casefold() == customer.strip().casefold():
+            matches.append((name, weight, destination, priority))
+    if not matches:
+        return None
+    return {
+        'customer': matches[0][0],
+        'shipment_count': len(matches),
+        'total_weight_kg': f"{sum((item[1] for item in matches), Decimal('0')):.2f}",
+        'express_count': sum(item[3] == 'EXPRESS' for item in matches),
+        'destinations': '|'.join(sorted({item[2] for item in matches})),
+    }
+
+
+def save_customer_profile(profile):
+    path = EXPORTS_FOLDER / 'customer-profiles.csv'
+    rows = []
+    if path.exists():
+        with path.open(encoding='utf-8-sig', newline='') as file:
+            reader = csv.DictReader(file)
+            if reader.fieldnames != PROFILE_HEADER:
+                raise ValueError('Unexpected customer profile CSV header')
+            rows = list(reader)
+    updated = []
+    replaced = False
+    for row in rows:
+        if row['customer'].strip().casefold() == profile['customer'].casefold():
+            if not replaced:
+                updated.append(profile)
+                replaced = True
+        else:
+            updated.append(row)
+    if not replaced:
+        updated.append(profile)
+    EXPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', newline='', dir=EXPORTS_FOLDER,
+                                         prefix='customer-profiles-', suffix='.tmp', delete=False) as file:
+            temporary_path = file.name
+            writer = csv.DictWriter(file, fieldnames=PROFILE_HEADER)
+            writer.writeheader()
+            writer.writerows(updated)
+        os.replace(temporary_path, path)
+    finally:
+        if temporary_path is not None and os.path.exists(temporary_path):
+            os.unlink(temporary_path)
+
+
+def find_portcalls(calls, vessels, month):
+    names = {}
+    for vessel in vessels:
+        if isinstance(vessel.get('vessel_id'), str) and isinstance(vessel.get('name'), str):
+            names[vessel['vessel_id']] = vessel['name']
+        else:
+            print('Skipping invalid vessel record.')
+    matches = []
+    for call in calls:
+        try:
+            arrival = date.fromisoformat(call.get('arrival_date', ''))
+        except (ValueError, TypeError):
+            print(f"Skipping {call.get('call_id', 'unknown')}: invalid date {call.get('arrival_date')}.")
+            continue
+        vessel_id = call.get('vessel_id')
+        if vessel_id not in names:
+            print(f"Skipping {call.get('call_id', 'unknown')}: unknown vessel_id {vessel_id}.")
+            continue
+        if arrival.month == month:
+            matches.append((arrival, names[vessel_id], call))
+    return sorted(matches, key=lambda item: (item[0], item[1]))
