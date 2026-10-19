@@ -23,7 +23,7 @@ def main():
                 operations.display_registered_vessels()
                 print()
             case "2":
-                operations.inspect_vessel_manifest(input("Type in the name of the vessel: "), input("Type in the date: "))
+                operations.inspect_vessel_manifest(input("Type in the name of the vessel: "))
                 print()
             case "3":
                 operations.identify_priority_cargo(input("Type in the port call ID: "))
