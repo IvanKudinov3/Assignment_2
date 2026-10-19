@@ -47,7 +47,7 @@ def main():
                 print("Searching incident reports...")
                 print()
             case "10":
-                print("Closing console...")
+                print("Console closed. HarborFlow operational data remains safe.")
                 print()
                 exit()
                 break
