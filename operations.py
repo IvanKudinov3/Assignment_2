@@ -227,3 +227,54 @@ def identify_priority_cargo(call_id):
 
     print(f"Category totals: CONTROLLED={len(list_controlled)}, COLD CHAIN={len(list_cold_chain)}, EXPEDITE={len(list_expedite)}, STANDARD={len(list_standart)}")
     return
+
+def sanitize_incident_service():
+    incidents, skipped = data_access.load_incidents()
+    incidents.sort(key=lambda incident: incident["title"].lower())
+
+    if not incidents:
+        print("No incident reports found.")
+        return
+
+    for number, incident in enumerate(incidents, 1):
+        print(f"{number}. {incident['title']}")
+
+    selected = None
+    while selected is None:  # цикл без break: виходимо, коли selected заповнений
+        raw = input("Select incident: ").strip()
+        try:
+            number = int(raw)
+        except ValueError:
+            number = 0
+        if 1 <= number <= len(incidents):
+            selected = incidents[number - 1]
+        else:
+            print("Error - Select a listed incident.")
+
+    cleaned, changed = text_tools.sanitize_report(selected["report"])
+    if not changed:
+        print("Incident contains no share-sensitive identifiers.")
+        return
+
+    data_access.save_sanitized_report(selected["incident_id"], cleaned)
+    print(f"Sanitized report saved: exports/sanitized/{selected['incident_id']}-sanitized.txt")
+
+
+def sequence_service():
+    call_id = input("Call ID: ").strip()
+
+    if not data_access.port_call_exists(call_id):
+        print("Port call not found")
+        return
+
+    manifest = data_access.load_manifest_by_call_id(call_id)
+    if manifest is None:
+        print("Manifest unavailable")
+        return
+
+    events = [str(code) for code in manifest["event_codes"]]
+    length, sequence = text_tools.longest_unique_sequence(events)
+
+    print("Event codes: " + ",".join(events))
+    print(f"Longest stable sequence length: {length}")
+    print("Sequence: " + " -> ".join(sequence))
