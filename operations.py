@@ -228,6 +228,55 @@ def identify_priority_cargo(call_id):
     print(f"Category totals: CONTROLLED={len(list_controlled)}, COLD CHAIN={len(list_cold_chain)}, EXPEDITE={len(list_expedite)}, STANDARD={len(list_standart)}")
     return
 
+if __name__ == "__main__":
+    main() 
+    pass
+ 
+
+import csv
+from data_access import read_json_files, read_json_records, read_portcalls
+from operations import find_portcalls, save_customer_profile, summarize_customer
+
+MONTH_NAMES = ('', 'January', 'February', 'March', 'April', 'May', 'June',
+               'July', 'August', 'September', 'October', 'November', 'December')
+
+
+def customer_search():
+    customer = input('Customer name: ').strip()
+    try:
+        profile = summarize_customer(read_json_files(), customer)
+        if profile is None:
+            print('Customer not found.')
+            return
+        save_customer_profile(profile)
+    except (OSError, ValueError, csv.Error) as error:
+        print(f'Could not update customer profile: {error}')
+        return
+    print('Customer profile updated: exports/customer-profiles.csv')
+
+
+def port_calls_by_month():
+    while True:
+        try:
+            month = int(input('Month (1-12): '))
+            if 1 <= month <= 12:
+                break
+        except ValueError:
+            pass
+        print('Error - Enter a month from 1 to 12.')
+    try:
+        calls = find_portcalls(read_portcalls(), read_json_records('vessels'), month)
+    except (OSError, csv.Error) as error:
+        print(f'Could not read port calls: {error}')
+        return
+    if not calls:
+        print('No port calls found.')
+        return
+    print(f'Port calls in {MONTH_NAMES[month]}:')
+    for arrival, vessel_name, call in calls:
+        formatted_date = f'{arrival.day:02d} {MONTH_NAMES[arrival.month]} {arrival.year}'
+        print(f"- {formatted_date} | {vessel_name} | {call['port_code']} | {call['call_id']}")
+
 def sanitize_incident_service():
     incidents, skipped = data_access.load_incidents()
     incidents.sort(key=lambda incident: incident["title"].lower())
