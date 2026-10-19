@@ -59,10 +59,7 @@ def main():
 if __name__ == "__main__":
     main() 
     pass
-
-
-if __name__ == "__main__":
-    main()
+ 
 
 import os
 import json
