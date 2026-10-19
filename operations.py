@@ -310,7 +310,7 @@ def sanitize_incident_service():
         return
 
     data_access.save_sanitized_report(selected["incident_id"], cleaned)
-    print("\nIncident sanitized")
+    print("\nIncident sanitized: ")
 
 
 def sequence_service():
