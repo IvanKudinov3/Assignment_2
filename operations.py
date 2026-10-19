@@ -290,9 +290,6 @@ def sanitize_incident_service():
         print("No incident reports found.")
         return
 
-    for number, incident in enumerate(incidents, 1):
-        print(f"{number}. {incident['title']}")
-
     selected = None
     choosing=True
     while choosing:
