@@ -7,8 +7,6 @@ import os
 from datetime import datetime
 import data_access
 import text_tools
-import csv
-from math import isfinite
 
 script_dir = os.path.dirname(os.path.abspath(__file__)) #directory the main.py is in. The assumption is the dataset will be in the same directory.
 
@@ -45,11 +43,7 @@ def display_registered_vessels():
 # finds id in the port call in accordance with the vessels name, then sorts the calls by date and alphabetically if needed. 
 def find_id_in_port_calls(vessels_name, reference_date): 
     vessels_name = vessels_name.strip().lower()
-    try:
-        reference_date = datetime.strptime(reference_date, "%Y-%m-%d").date()
-    except ValueError:
-        print("Error - Date must use YYYY-MM-DD.")
-        return
+
     
     filename = os.path.join(script_dir, "dataset", "port_calls.csv")
     vessels, vessel_files_skipped = load_vessels()
@@ -59,10 +53,15 @@ def find_id_in_port_calls(vessels_name, reference_date):
             vessel_id = v['vessel_id'] 
     
     if vessel_id == "":
-        print("Vessel not found")
+        print("Vessel not found.")
         return        
     port_calls = data_access.load_csv(filename, vessel_id) #list of calls of a vessel with the given ID    
-
+    
+    try:
+        reference_date = datetime.strptime(reference_date, "%Y-%m-%d").date()
+    except ValueError:
+        print("Error - Date must use YYYY-MM-DD.")
+        return
     calls_to_sort = [] #list of ids to sort alphabetically if they have the same date  
     for call in port_calls:
         try: #in case of invalid date, put it in try. If one is invalid, just continue
@@ -193,7 +192,7 @@ def check_for_presence(call_id):
 def identify_priority_cargo(call_id):
     call_id = call_id.strip().upper() #upper makes sure that users input is always in upper case. Therefore it always compares the upper to upper (call id in the csb is upper). 
     if not check_for_presence(call_id):
-        print("Port call not found")
+        print("Port call not found.")
         return
 
     matching_manifests = get_matching_manifests(call_id)
@@ -309,7 +308,7 @@ def sanitize_incident_service():
         return
 
     data_access.save_sanitized_report(selected["incident_id"], cleaned)
-    print("Incident sanitized:")
+    print(f"Sanitized report saved: exports/sanitized/{selected['incident_id']}-sanitized.txt")
 
 
 def sequence_service():
@@ -414,164 +413,3 @@ def find_portcalls(calls, vessels, month):
         if arrival.month == month:
             matches.append((arrival, names[vessel_id], call))
     return sorted(matches, key=lambda item: (item[0], item[1]))
-
-#Task 8
-
-def _parse_assignment_date(raw_date):
-    """Parse a date only when it follows the required YYYY-MM-DD format."""
-    raw_date = (raw_date or "").strip()
-    parsed_date = datetime.strptime(raw_date, "%Y-%m-%d").date()
-    if parsed_date.isoformat() != raw_date:
-        raise ValueError("Date must use YYYY-MM-DD")
-    return parsed_date
-
-def assess_weather_risk():
-    """Show upcoming calls for one vessel and their matching weather advice."""
-    vessels, _ = load_vessels()
-    vessel_name = input("Vessel name: ").strip()
-
-    selected_vessel = None
-    for vessel in vessels:
-        if str(vessel.get("name", "")).strip().casefold() == vessel_name.casefold():
-            selected_vessel = vessel
-            break
-
-    if selected_vessel is None:
-        print("Vessel not found.")
-        return
-
-    # If the date is invalid, only this prompt is repeated.
-    while True:
-        raw_reference_date = input("Reference date (YYYY-MM-DD): ").strip()
-        try:
-            reference_date = _parse_assignment_date(raw_reference_date)
-            break
-        except ValueError:
-            print("Error - Date must use YYYY-MM-DD.")
-
-    try:
-        port_calls = data_access.load_port_call_records()
-        weather_rows = data_access.load_weather_records()
-    except FileNotFoundError as error:
-        print(f"Required data file not found: {error.filename}")
-        return
-    except (OSError, csv.Error, UnicodeError) as error:
-        print(f"Could not read port-call or weather data: {error}")
-        return
-
-    vessel_id = str(selected_vessel.get("vessel_id", "")).strip().casefold()
-    upcoming_calls = []
-
-    for row in port_calls:
-        row_vessel_id = str(row.get("vessel_id") or "").strip().casefold()
-        if row_vessel_id != vessel_id:
-            continue
-
-        call_id = str(row.get("call_id") or "").strip()
-        raw_arrival_date = row.get("arrival_date") or ""
-        try:
-            arrival_date = _parse_assignment_date(raw_arrival_date)
-        except ValueError:
-            print(
-                f"Invalid port-call date for {call_id or 'unknown call'}: "
-                f"{str(raw_arrival_date).strip()!r}. Skipping."
-            )
-            continue
-
-        if arrival_date >= reference_date:
-            upcoming_calls.append((
-                arrival_date,
-                call_id,
-                str(row.get("port_code") or "").strip(),
-            ))
-
-    if not upcoming_calls:
-        print("No upcoming port calls found.")
-        return
-
-    # Convert each usable forecast row once and index it by (port, date).
-    forecasts = {}
-    for row_number, row in enumerate(weather_rows, start=2):
-        port_code = str(row.get("port_code") or "").strip()
-        raw_date = str(row.get("date") or "").strip()
-        try:
-            if not port_code:
-                raise ValueError("missing port_code")
-            if not raw_date:
-                raise ValueError("missing date")
-
-            forecast_date = _parse_assignment_date(raw_date)
-            wind = float(row.get("wind_kmh", ""))
-            rain = float(row.get("precipitation_mm", ""))
-            waves = float(row.get("wave_height_m", ""))
-        except (ValueError, TypeError) as error:
-            print(f"Malformed weather row {row_number}: {error}. Skipping.")
-            continue
-
-        if not all(isfinite(value) for value in (wind, rain, waves)):
-            print(f"Malformed weather row {row_number}: values must be finite numbers. Skipping.")
-            continue
-
-        key = (port_code.casefold(), forecast_date)
-        forecasts[key] = {
-            "wind_kmh": wind,
-            "precipitation_mm": rain,
-            "wave_height_m": waves,
-        }
-
-    # Earlier arrival dates appear first; call_id breaks date ties.
-    upcoming_calls.sort(key=lambda call: (call[0], call[1]))
-    display_name = str(selected_vessel.get("name", vessel_name)).strip()
-
-    for arrival_date, call_id, port_code in upcoming_calls:
-        print(f"{display_name} | {port_code} | {arrival_date.strftime('%d %B %Y')}")
-        forecast = forecasts.get((port_code.casefold(), arrival_date))
-        if forecast is None:
-            print("Forecast unavailable")
-            continue
-
-        wind = forecast["wind_kmh"]
-        rain = forecast["precipitation_mm"]
-        waves = forecast["wave_height_m"]
-
-        print(f"Wind: {wind:.1f} km/h | Rain: {rain:.1f} mm | Waves: {waves:.1f} m")
-
-        recommendations = []
-        if wind >= 45:
-            recommendations.append("Suspend crane operations.")
-        if waves >= 2.5:
-            recommendations.append("Arrange tug assistance.")
-        if rain >= 8 and wind < 45:
-            recommendations.append("Prepare covered handling.")
-        if wind < 45 and waves < 2.5 and rain < 8:
-            recommendations.append("Normal operating plan.")
-
-        print("Recommendation: " + " ".join(recommendations))
-
-
-# Task 9
-
-def search_incident_reports():
-    """Search incident reports using a cached word-to-incident index."""
-    query = input("Search incident reports: ").strip()
-    index_data = data_access.load_incident_index_cache()
-
-    if index_data is None:
-        try:
-            incidents, _ = data_access.load_incidents()
-        except (OSError, UnicodeError) as error:
-            print(f"Could not read incident reports: {error}")
-            return
-
-        index_data = text_tools.build_incident_index(incidents)
-        try:
-            data_access.save_incident_index_cache(index_data)
-        except OSError as error:
-            # The current search can still use the index held in memory.
-            print(f"Warning: could not save incident index: {error}")
-
-    print(f"Matches for '{query}':")
-    matches = text_tools.search_incident_index(index_data, query)
-    for incident_id, score, title in matches:
-        print(f"- {incident_id} | score {score} | {title}")
-
