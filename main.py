@@ -52,7 +52,7 @@ def main():
                 exit()
                 break
             case _:
-                print("Invalid option. Please try again.") 
+                print("Error - Select a service from 1 to 10.") 
                 print()
         
 
