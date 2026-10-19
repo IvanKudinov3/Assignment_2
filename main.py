@@ -16,8 +16,9 @@ def menu():
     return user_input
 
 
-def main(): 
-    while True:
+def main():
+    running=True
+    while running:
         match menu(): 
             case "1":  
                 operations.display_registered_vessels()
@@ -41,16 +42,15 @@ def main():
                 operations.sequence_service()
                 print()
             case "8":
-                print("Assessing weather risk for upcoming calls...")
+                operations.assess_weather_risk()
                 print()
             case "9":
-                print("Searching incident reports...")
+                operations.search_incident_reports()
                 print()
             case "10":
                 print("Console closed. HarborFlow operational data remains safe.")
                 print()
-                exit()
-                break
+                running=False
             case _:
                 print("Error - Select a service from 1 to 10.") 
                 print()
