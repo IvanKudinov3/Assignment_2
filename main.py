@@ -23,18 +23,17 @@ def main():
                 operations.display_registered_vessels()
                 print()
             case "2":
-                print("Inspecting vessel manifest...")
                 operations.inspect_vessel_manifest(input("Type in the name of the vessel: "), input("Type in the date: "))
                 print()
             case "3":
-                print("Identifying priority cargo...")
                 operations.identify_priority_cargo(input("Type in the port call ID: "))
                 print()
             case "4":
                  customer_search()
+                 print()
             case "5":
-                print("Finding port calls by month...")
                 port_calls_by_month()
+                print()
             case "6":
                 operations.sanitize_incident_service()
                 print()
