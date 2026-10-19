@@ -12,7 +12,9 @@ INCIDENTS_DIR = os.path.join(script_dir, "dataset", "incidents")
 MANIFESTS_DIR = os.path.join(script_dir, "dataset", "manifests")
 PORT_CALLS_FILE = os.path.join(script_dir, "dataset", "port_calls.csv")
 SANITIZED_DIR = os.path.join(script_dir, "exports", "sanitized")
-
+PROJECT_FOLDER = Path(__file__).resolve().parent
+DATASET_FOLDER = PROJECT_FOLDER / 'dataset'
+EXPORTS_FOLDER = PROJECT_FOLDER / 'exports'
 
 def load_json(directory): 
     damaged_files = 0
@@ -86,3 +88,29 @@ def load_manifest_by_call_id(call_id):
                 return data
             return None
     return None
+
+
+
+def read_json_records(folder):
+    records = []
+    for path in sorted((DATASET_FOLDER / folder).glob('*.json')):
+        try:
+            with path.open(encoding='utf-8-sig') as file:
+                data = json.load(file)
+            for item in data if isinstance(data, list) else [data]:
+                if isinstance(item, dict):
+                    records.append(item)
+                else:
+                    print(f'Skipping invalid record in {path.name}.')
+        except (OSError, ValueError) as error:
+            print(f'Skipping {path.name}: {error}')
+    return records
+
+
+def read_json_files():
+    return read_json_records('shipments')
+
+
+def read_portcalls():
+    with (DATASET_FOLDER / 'port_calls.csv').open(encoding='utf-8-sig', newline='') as file:
+        return list(csv.DictReader(file))
