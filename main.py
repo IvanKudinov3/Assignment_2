@@ -29,10 +29,10 @@ def main():
                 operations.identify_priority_cargo(input("Type in the port call ID: "))
                 print()
             case "4":
-                 customer_search()
+                 operations.customer_search()
                  print()
             case "5":
-                port_calls_by_month()
+                operations.port_calls_by_month()
                 print()
             case "6":
                 operations.sanitize_incident_service()
