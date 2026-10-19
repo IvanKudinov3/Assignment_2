@@ -17,7 +17,7 @@ def sanitize_report(text):#changes seal, container, email and gives back sanitiz
     return sanitized, is_changed
 
 
-№task7
+#task7
 def longest_unique_sequence(events):#gives the longest sequence without repetiotion and its length
     last_seen = {}   
     start = 0    
