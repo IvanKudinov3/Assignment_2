@@ -4,7 +4,9 @@ Keep calculations and record-processing logic separate from user interaction
 where practical.
 """ 
 import os 
-from datetime import datetime
+import tempfile
+from datetime import date, datetime
+from decimal import Decimal, InvalidOperation
 import data_access
 import text_tools
 
@@ -235,7 +237,10 @@ if __name__ == "__main__":
  
 
 import csv
-from data_access import read_json_files, read_json_records, read_portcalls 
+from data_access import EXPORTS_FOLDER, read_json_files, read_json_records, read_portcalls
+
+PROFILE_HEADER = ['customer', 'shipment_count', 'total_weight_kg',
+                  'express_count', 'destinations']
 
 MONTH_NAMES = ('', 'January', 'February', 'March', 'April', 'May', 'June',
                'July', 'August', 'September', 'October', 'November', 'December')
