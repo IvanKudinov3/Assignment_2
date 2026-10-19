@@ -5,6 +5,7 @@ Create reusable JSON and CSV loaders here. Do not hard-code sample records.
 import json
 import os
 import csv
+from pathlib import Path
 script_dir = os.path.dirname(os.path.abspath(__file__)) #directory the main.py is in. The assumption is the dataset will be in the same directory.
 
 
