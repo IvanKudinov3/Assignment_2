@@ -2,22 +2,22 @@ HARBORFLOW PORT INTELLIGENCE CONSOLE - TEAM README
 
 Run instructions
 ----------------
-Command:
-Python version tested:
+Command:"busy anaconda of diversity"
+Python version tested: Python 3.14.7
 
 Team members and concrete contributions
 ---------------------------------------
 Name:Ivan Kudinov
-Contribution: task 1: List registered vessels, task 2: Inspect a vessel manifest, task 3: Identify priority cargo.
+Contribution: Task 1: List registered vessels. Task 2: Inspect a vessel manifest, task 3: Identify priority cargo.
 
-Name:
-Contribution:
+Name: Toste Lagerström
+Contribution: Task 4:Export a customer operation profile. Task 5: Find port calls by month. 
 
 Name:Vladyslav Pasalskyi
-Contribution:Task 6: sanitizes an incident report. Task 7: analyzes the longest stable event sequence
+Contribution:Task 6: sanitizes an incident report. Task 7: analyzes the longest stable event sequence.
 
 Name: Syed Mujtaba Kazmi
-Contribution: Task 8: Assess weather risk for upcoming calls, Task 9: Search incident reports.
+Contribution: Task 8: Assess weather risk for upcoming calls. Task 9: Search incident reports.
 
 Architecture
 ------------
@@ -28,9 +28,9 @@ text_tools.py responsibilities: Contains only main functions for task 6 and task
 
 File and error-handling design
 ------------------------------
-How paths are resolved: 
-How malformed or missing input is handled:
-How generated files are updated safely:
+How paths are resolved:All file paths are constructed dynamically using relative paths based on the project's root directory.
+How malformed or missing input is handled: Program uses try with exceptions like FileNotFoundError and json.JSONDecodeError. This prevents program from crashing. Invalid or damaged date are also skipped and counted by list without crashing the current function.
+How generated files are updated safely: Existing files are loaded entirely into memory before modyfing them. After saving a file it overwrites it preventing duplicates or losing data.
 
 Known limitations:
 
