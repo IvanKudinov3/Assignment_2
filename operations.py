@@ -44,7 +44,7 @@ def display_registered_vessels():
 
 
 # finds id in the port call in accordance with the vessels name, then sorts the calls by date and alphabetically if needed. 
-def find_id_in_port_calls(vessels_name, reference_date): 
+def find_id_in_port_calls(vessels_name): 
     vessels_name = vessels_name.strip().lower()
 
     
@@ -57,14 +57,18 @@ def find_id_in_port_calls(vessels_name, reference_date):
     
     if vessel_id == "":
         print("Vessel not found.")
-        return        
-    port_calls = data_access.load_csv(filename, vessel_id) #list of calls of a vessel with the given ID    
-    
-    try:
-        reference_date = datetime.strptime(reference_date, "%Y-%m-%d").date()
-    except ValueError:
-        print("Error - Date must use YYYY-MM-DD.")
         return
+    port_calls = data_access.load_csv(filename, vessel_id) #list of calls of a vessel with the given ID    
+
+    while True:
+        reference_date = input("Type in the date: ")
+        try:
+            reference_date = datetime.strptime(reference_date, "%Y-%m-%d").date() 
+            break #break if parsing date was successful
+        except ValueError:
+            print("Error - Date must use YYYY-MM-DD.")
+
+    
     calls_to_sort = [] #list of ids to sort alphabetically if they have the same date  
     for call in port_calls:
         try: #in case of invalid date, put it in try. If one is invalid, just continue
@@ -142,11 +146,11 @@ def get_matching_shipments(dict_manifest):
  
 
 #finally, bring all the data together and manifest it. 
-def inspect_vessel_manifest(name, date):
+def inspect_vessel_manifest(name):
     name = name.strip()
 
     #eventhough both functions have checks for none reurn, the program still need to return in the caller function
-    result = find_id_in_port_calls(name, date)
+    result = find_id_in_port_calls(name)
     if result == None:
         return
     call_id, call_time = result
