@@ -35,6 +35,6 @@ How generated files are updated safely:
 Known limitations:
 
 1. The program operates on the assumptions that certain keys, rows and columns in CSV and JSON files are present. The program does not check for all the keys in JSON and if one of them is absent, the program would crash. 
-2. If incident files that malformed or lack incident_id, title or report are skipped without a message to the user. If there are an existing report for specific incident an attempt to save it will ovewrite the previous report. (Task 6)
+2. If incident files that malformed or lack incident_id, title or report are skipped without a message to the user.(Task 6). Between several manifests that share the same call_id, only the first one found will be used.(Task 7)
 -----------------
 Write "None known" or describe each known limitation.
