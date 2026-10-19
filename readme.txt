@@ -16,8 +16,8 @@ Contribution:
 Name:Vladyslav Pasalskyi
 Contribution:Task 6: sanitizes an incident report. Task 7: analyzes the longest stable event sequence
 
-Name (if applicable):
-Contribution:
+Name: Syed Mujtaba Kazmi
+Contribution: Task 8: Assess weather risk for upcoming calls, Task 9: Search incident reports.
 
 Architecture
 ------------
