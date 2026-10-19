@@ -234,8 +234,7 @@ if __name__ == "__main__":
  
 
 import csv
-from data_access import read_json_files, read_json_records, read_portcalls
-from operations import find_portcalls, save_customer_profile, summarize_customer
+from data_access import read_json_files, read_json_records, read_portcalls 
 
 MONTH_NAMES = ('', 'January', 'February', 'March', 'April', 'May', 'June',
                'July', 'August', 'September', 'October', 'November', 'December')
