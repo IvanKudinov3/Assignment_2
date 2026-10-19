@@ -240,7 +240,8 @@ def sanitize_incident_service():
         print(f"{number}. {incident['title']}")
 
     selected = None
-    while selected is None:
+    choosing=True
+    while choosing:
         raw = input("Select incident: ").strip()
         try:
             number = int(raw)
@@ -248,6 +249,7 @@ def sanitize_incident_service():
             number = 0
         if 1 <= number <= len(incidents):
             selected = incidents[number - 1]
+            choosing=False
         else:
             print("Error - Select a listed incident.")
 
