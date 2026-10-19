@@ -36,10 +36,10 @@ def main():
                 print("Finding port calls by month...")
                 port_calls_by_month()
             case "6":
-                print("Sanitizing incident report...")
+                operations.sanitize_incident_service()
                 print()
             case "7":
-                print("Analyzing longest stable event sequence...")
+                operations.sequence_service()
                 print()
             case "8":
                 print("Assessing weather risk for upcoming calls...")
