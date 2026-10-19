@@ -415,6 +415,8 @@ def find_portcalls(calls, vessels, month):
             matches.append((arrival, names[vessel_id], call))
     return sorted(matches, key=lambda item: (item[0], item[1]))
 
+#Task 8
+
 def _parse_assignment_date(raw_date):
     """Parse a date only when it follows the required YYYY-MM-DD format."""
     raw_date = (raw_date or "").strip()
@@ -422,8 +424,6 @@ def _parse_assignment_date(raw_date):
     if parsed_date.isoformat() != raw_date:
         raise ValueError("Date must use YYYY-MM-DD")
     return parsed_date
-
-# Task 8
 
 def assess_weather_risk():
     """Show upcoming calls for one vessel and their matching weather advice."""
